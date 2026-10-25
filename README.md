@@ -11,23 +11,29 @@ master document: `../docs/ARCHITECTURE.md`. Roadmap steps 0–1 are implemented.
 
 ## Setup
 ```bash
-./setup.sh
+./setup.sh            # safe to re-run
+./setup.sh --reauth   # redo the Gmail authorisation
 ```
-Creates `functions/venv`, installs the dependencies and creates `functions/.env.local` and
-`functions/.secret.local` from the `.example` files **only if they are missing** (it never overwrites).
-It then prints what you still have to fill in. The `.example` files say where each value comes from.
+`setup.sh`:
+1. creates `functions/venv` and installs the dependencies;
+2. creates `functions/.env.local` and `functions/.secret.local` from the `.example` files **only if missing**
+   (never overwrites) and sets `.secret.local` to mode 600;
+3. handles the **Gmail authorisation** when `GMAIL_REFRESH_TOKEN` is missing/empty in `.secret.local` (or with `--reauth`):
+   it reuses `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` from `.secret.local` if present, otherwise asks for them
+   (the secret is read hidden), opens the browser and writes the three `GMAIL_*` values into `functions/.secret.local`.
+   Secrets are passed only as environment of the auth process, and are never printed or stored in versioned files;
+4. prints the next steps.
 
-1. **Gmail refresh token** (scope `gmail.readonly`):
-   ```bash
-   GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... functions/venv/bin/python scripts/gmail_auth.py
-   ```
-   The token is printed to the terminal only. Then, one at a time (each prompts for the value):
+Steps to finish by hand:
+
+1. **Production secrets** (once; the firebase CLI prompts for each value):
    ```bash
    firebase functions:secrets:set GMAIL_CLIENT_ID --project distillo-prod
    firebase functions:secrets:set GMAIL_CLIENT_SECRET --project distillo-prod
    firebase functions:secrets:set GMAIL_REFRESH_TOKEN --project distillo-prod
    ```
-2. **Emulator**: fill in `functions/.secret.local` (GMAIL_*) and `functions/.env.local` (gitignored, created by `setup.sh`).
+2. **Gmail without `setup.sh`** (token printed instead of saved):
+   `GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... functions/venv/bin/python scripts/gmail_auth.py`
 3. **Allowed uid**: sign in once with Google (Auth emulator or production) and copy the uid.
    Replace `REPLACE_WITH_UID` in `firestore.rules` (function `allowedUid()`), in `functions/.env`
    and in `functions/.env.local`.
@@ -42,6 +48,7 @@ It then prints what you still have to fill in. The `.example` files say where ea
 Secrets: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
 
 ## Usage
+- `./setup.sh [--reauth]`: see Setup.
 - `./rundev.sh [--seed]`: Auth/Firestore/Functions emulators (UI at http://127.0.0.1:4000);
   `--seed` loads `fixtures/emails/*.eml`. The schedule does not fire in the emulator: call `run_ingest`
   (callable, needs an authenticated user with the allowed uid).

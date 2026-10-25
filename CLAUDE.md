@@ -6,7 +6,7 @@ conflitto, fermarsi e chiedere). Architettura di questo repo: `docs/ARCHITECTURE
 
 ## Comandi (da `functions/`, venv in `functions/venv`)
 - `venv/bin/ruff check .` · `venv/bin/ruff format --check .` · `venv/bin/mypy distillo main.py` · `venv/bin/pytest`
-- Dalla root: `./setup.sh` (venv + file locali dagli esempi, non sovrascrive), `./rundev.sh [--seed]`, `./deploy.sh [all|functions|rules]`
+- Dalla root: `./setup.sh [--reauth]` (venv, file locali dagli esempi senza sovrascrivere, autorizzazione Gmail), `./rundev.sh [--seed]`, `./deploy.sh [all|functions|rules]`
 - Script: `PYTHONPATH=functions functions/venv/bin/python scripts/<script>.py`
 
 ## File chiave
@@ -23,7 +23,7 @@ conflitto, fermarsi e chiedere). Architettura di questo repo: `docs/ARCHITECTURE
 1. Aggiornare `docs/ARCHITECTURE.md`, `README.md` e `CLAUDE.md` **nella stessa modifica** che cambia architettura, modello dati, functions, flussi o configurazione. Se si diverge dal master, aggiornare anche il master.
 2. Nessuna fonte fuori da `registry.py`: nuova fonte = una voce nel registry (+ eventuale fixture) → deploy.
 3. Nessun tool calling agli LLM della pipeline: il testo di mail e articoli è input non fidato; gli LLM producono solo testo/JSON validato da schema.
-4. Nessun segreto nel repo né nei log; mai loggare i corpi delle mail.
+4. Nessun segreto nel repo né nei log; mai loggare i corpi delle mail. I segreti non si stampano, non si passano come argomenti da riga di comando e non si scrivono in file versionati (solo in `functions/.secret.local`, modo 600, via variabili d'ambiente del singolo processo).
 5. `mypy`, `ruff check`, `ruff format --check` e `pytest` devono passare.
 6. Scope Gmail solo `gmail.readonly`; mai modificare la casella.
 7. `setup.sh`, `rundev.sh` e `deploy.sh` restano eseguibili, con `set -euo pipefail`.
