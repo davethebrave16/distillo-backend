@@ -61,7 +61,7 @@ If the call fails with `invalid_grant` (visible in the `./rundev.sh` terminal), 
 |---|---|---|
 | `ALLOWED_UID` | – | uid allowed to call `run_ingest` |
 | `INGEST_LOOKBACK_DAYS` | 3 | Gmail window (`newer_than:Nd`); raise it for a backfill |
-| `INGEST_MAX_MESSAGES` | 50 | max messages per run |
+| `INGEST_MAX_MESSAGES` | 50 | max **new** mails processed per run (already-stored ones don't count; newest first, the rest waits for the next run) |
 
 Secrets: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
 
@@ -69,7 +69,7 @@ Secrets: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
 - `./setup.sh [--reauth]`: see Setup.
 - `./ingest-local.sh [--reset-user] [--lookback N]`: see Local quickstart.
 - `./rundev.sh [--seed]`: Auth/Firestore/Functions emulators (UI at http://127.0.0.1:4000);
-  `--seed` loads `fixtures/emails/*.eml`. The schedule does not fire in the emulator: call `run_ingest`
+  `--seed` loads `fixtures/emails/*.eml` (local-only folder: real mails contain your tracking links, so everything there except the README and `.gitkeep` is gitignored). The schedule does not fire in the emulator: call `run_ingest`
   (callable, needs an authenticated user with the allowed uid).
 - `./deploy.sh [all|functions|rules]`: ruff, mypy, pytest, then `firebase deploy` (project `default`, or `PROJECT=...`).
 - Checks, from `functions/`: `venv/bin/ruff check .`, `venv/bin/ruff format --check .`,

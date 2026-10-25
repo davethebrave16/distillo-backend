@@ -67,6 +67,12 @@ def _existing_ids(db: firestore.Client, ids: list[str]) -> set[str]:
     return existing
 
 
+def select_new_ids(ids: list[str], existing: set[str], max_messages: int) -> tuple[list[str], int]:
+    """New IDs to process this run (newest first, at most `max_messages`) and the deferred count."""
+    new_ids = [i for i in ids if i not in existing]
+    return new_ids[:max_messages], max(0, len(new_ids) - max_messages)
+
+
 def _make_enabled_checker(db: firestore.Client) -> Callable[[str], bool]:
     cache: dict[str, bool] = {}
 
@@ -104,18 +110,22 @@ def ingest(
     lookback_days: int,
     max_messages: int,
 ) -> IngestSummary:
-    """Gmail label `news` → `emails/{gmailMessageId}`. One failing mail never stops the run."""
+    """Gmail label `news` → `emails/{gmailMessageId}`. One failing mail never stops the run.
+
+    `max_messages` caps the NEW mails processed per run; already-stored IDs never count against it.
+    """
     summary = IngestSummary(listed=0, created=0, skipped=0, unmatched=0, errors=0)
 
-    ids = list_message_ids(gmail, f"label:news newer_than:{lookback_days}d", max_messages)
+    ids = list_message_ids(gmail, f"label:news newer_than:{lookback_days}d")
     summary["listed"] = len(ids)
 
     existing = _existing_ids(db, ids)
+    to_process, deferred = select_new_ids(ids, existing, max_messages)
+    if deferred:
+        logger.info("ingest cap reached, remaining mails wait for the next run", deferred=deferred)
     is_enabled = _make_enabled_checker(db)
 
-    for message_id in ids:
-        if message_id in existing:
-            continue
+    for message_id in to_process:
         try:
             parsed = parse_email(get_raw_message(gmail, message_id))
             doc = build_email_doc(parsed, parsed.date or datetime.now(UTC), is_enabled)

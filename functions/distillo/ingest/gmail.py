@@ -8,6 +8,7 @@ from distillo.ingest.mime import decode_gmail_raw
 GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 _PAGE_SIZE = 100
+LIST_HARD_LIMIT = 2000  # safety bound on listed IDs; the per-run processing cap is separate
 
 
 def build_gmail_service(client_id: str, client_secret: str, refresh_token: str) -> Any:
@@ -22,18 +23,18 @@ def build_gmail_service(client_id: str, client_secret: str, refresh_token: str) 
     return build("gmail", "v1", credentials=credentials, cache_discovery=False)
 
 
-def list_message_ids(service: Any, query: str, max_messages: int) -> list[str]:
-    """Message IDs matching `query`, following pagination up to `max_messages`."""
+def list_message_ids(service: Any, query: str, limit: int = LIST_HARD_LIMIT) -> list[str]:
+    """Message IDs matching `query` (newest first), following pagination up to `limit`."""
     ids: list[str] = []
     page_token: str | None = None
-    while len(ids) < max_messages:
+    while len(ids) < limit:
         response = (
             service.users()
             .messages()
             .list(
                 userId="me",
                 q=query,
-                maxResults=min(_PAGE_SIZE, max_messages - len(ids)),
+                maxResults=min(_PAGE_SIZE, limit - len(ids)),
                 pageToken=page_token,
             )
             .execute()
@@ -42,7 +43,7 @@ def list_message_ids(service: Any, query: str, max_messages: int) -> list[str]:
         page_token = response.get("nextPageToken")
         if not page_token:
             break
-    return ids[:max_messages]
+    return ids[:limit]
 
 
 def get_raw_message(service: Any, message_id: str) -> bytes:

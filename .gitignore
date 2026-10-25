@@ -12,3 +12,8 @@ firebase-export-*/
 .venv/
 .env.local
 .secret.local
+
+# real newsletters contain subscriber tracking links: never commit them
+fixtures/emails/*
+!fixtures/emails/.gitkeep
+!fixtures/emails/README.md

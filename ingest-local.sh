@@ -46,9 +46,10 @@ PROJECT=$("$PY" -c 'import json; print(json.load(open(".firebaserc"))["projects"
 AUTH_URL="http://127.0.0.1:$AUTH_PORT"
 FUNCTIONS_URL="http://127.0.0.1:$FUNCTIONS_PORT"
 
-for pair in "Auth:$AUTH_URL" "Functions:$FUNCTIONS_URL"; do
-  if ! curl -s -o /dev/null --max-time 3 "${pair#*:}/"; then
-    echo "The ${pair%%:*} emulator is not reachable at ${pair#*:}."
+is_listening() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }  # plain TCP check: no HTTP request noise
+for pair in "Auth:$AUTH_PORT" "Functions:$FUNCTIONS_PORT"; do
+  if ! is_listening "${pair#*:}"; then
+    echo "The ${pair%%:*} emulator is not reachable at 127.0.0.1:${pair#*:}."
     echo "Start it in another terminal with: ./rundev.sh"
     exit 1
   fi

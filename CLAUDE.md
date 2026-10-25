@@ -17,7 +17,7 @@ conflitto, fermarsi e chiedere). Architettura di questo repo: `docs/ARCHITECTURE
 - Python 3.13, tipizzato (mypy strict sul package `distillo`), `ruff` lint + format.
 - Campi Firestore in camelCase, Python in snake_case: mapping via modelli Pydantic (`alias`).
 - Param/secret letti solo a runtime con `.value`, mai all'import; `distillo.config` importato per primo in `main.py`.
-- Test `pytest` sulle parti pure, con fixture sintetiche (le mail reali vanno in `fixtures/emails/*.eml`).
+- Test `pytest` sulle parti pure, con fixture **sintetiche** costruite nei test. Le mail reali (`fixtures/emails/*.eml`) contengono link di tracking personali: sono gitignorate, non committarle e non usarle nei test.
 
 ## Regole obbligatorie (§11 del master)
 1. Aggiornare `docs/ARCHITECTURE.md`, `README.md` e `CLAUDE.md` **nella stessa modifica** che cambia architettura, modello dati, functions, flussi o configurazione. Se si diverge dal master, aggiornare anche il master.

@@ -31,14 +31,14 @@ Param e secret si leggono solo a runtime (`.value`), mai all'import.
 | `sources/registry.py` | `SOURCES` hardcoded (tldr, techpresso) e `match_source(from_header)`: `email.utils.parseaddr`, case-insensitive, prima gli indirizzi esatti, poi i domini |
 | `ingest/gmail.py` | Client Gmail da `google.oauth2.credentials.Credentials` (refresh token), scope solo `gmail.readonly`; `list_message_ids` con paginazione e tetto; `get_raw_message` (`format="raw"`) |
 | `ingest/mime.py` | `decode_gmail_raw` (base64url) e `parse_email(bytes)`: stdlib `email` con `policy.default`, corpo da `get_body(("html","plain"))`; accetta anche i byte di un `.eml` |
-| `ingest/html_to_md.py` | BeautifulSoup + `markdownify`: rimuove script/style, immagini di tracking (1×1, nascoste, host di tracking, senza alt), link di unsubscribe e footer legale (solo nel 40% finale del testo). I link "view in browser" restano (servono allo step 2 per le fonti `essay`) |
+| `ingest/html_to_md.py` | BeautifulSoup + `markdownify` → markdown leggibile riga per riga: rimuove script/style, elementi nascosti (preheader `display:none` ecc.), immagini di tracking (1×1, nascoste, host di tracking, senza alt), link di unsubscribe e le frasi orfane che lasciano (blocchi brevi che finiscono con "please ."), footer legale (solo nel 40% finale). Le tabelle di layout sono appiattite in paragrafi (si tengono solo le tabelle con `<th>` proprie); td/tr/div diventano paragrafi; i caratteri invisibili (U+200B–U+200D, U+2060, U+FEFF, U+00AD, U+034F: padding del preheader) e le sequenze di spazi sono rimossi, 3+ a-capo diventano 2. Gli URL di tracking restano intatti (li gestisce lo step 2) e i link "view in browser" restano |
 | `ingest/service.py` | `build_email_doc` (pura: mail parsata → `EmailDoc`) e `ingest()` |
 | `extract/`, `enrich/`, `analyze/`, `lib/`, `prompts/` | segnaposto per gli step successivi |
 
 ## Flusso di `ingest()`
-1. `list` con `label:news newer_than:{INGEST_LOOKBACK_DAYS}d`, paginato, massimo `INGEST_MAX_MESSAGES`.
-2. Gli ID già presenti in `emails/` vengono saltati (lettura a blocchi con `get_all`, solo `__name__`).
-3. Per gli altri: `get(format="raw")` → `parse_email` → `build_email_doc`:
+1. `list` con `label:news newer_than:{INGEST_LOOKBACK_DAYS}d`, paginazione completa (limite di sicurezza `LIST_HARD_LIMIT` = 2000 ID, dal più recente).
+2. Gli ID già presenti in `emails/` vengono saltati (lettura a blocchi con `get_all`, solo `__name__`). Dai restanti si prendono al massimo `INGEST_MAX_MESSAGES` (le più recenti); gli altri sono rimandati al run successivo (log `deferred`). Il tetto riguarda le mail **nuove**: le già salvate non lo consumano, quindi più run successivi avanzano fino alle mail più vecchie.
+3. Per quelle selezionate: `get(format="raw")` → `parse_email` → `build_email_doc`:
    - nessuna fonte nel registry → `unmatched` (markdown vuoto);
    - fonte con `sourceSettings/{id}.enabled == false` (assente = abilitata) → `skipped` (markdown vuoto);
    - altrimenti HTML (o testo semplice) → markdown, cap a 400k caratteri (limite Firestore 1 MiB) → `pending`.
@@ -76,4 +76,4 @@ sono versionate; `.env.local` e `.secret.local` no.
 ## Test
 `pytest` su parti pure: registry, MIME (multipart annidati, base64url, charset, fallback plain),
 HTML→markdown, `build_email_doc`, scrittura di `.secret.local` (`update_env_file`). Fixture sintetiche
-generate nei test. `ingest()` con Gmail e Firestore reali e il flusso OAuth non sono coperti da test automatici.
+generate nei test (le mail reali in `fixtures/emails/*.eml` sono gitignorate perché contengono i link di tracking dell'iscritto; restano solo `README.md` e `.gitkeep`). `ingest()` con Gmail e Firestore reali e il flusso OAuth non sono coperti da test automatici.
