@@ -38,6 +38,24 @@ Steps to finish by hand:
    Replace `REPLACE_WITH_UID` in `firestore.rules` (function `allowedUid()`), in `functions/.env`
    and in `functions/.env.local`.
 
+## Local quickstart
+1. `./setup.sh`: venv, local config files, Gmail authorisation.
+2. `./rundev.sh` (terminal A): starts the Auth, Firestore and Functions emulators (UI at http://127.0.0.1:4000).
+3. `./ingest-local.sh` (terminal B): signs in (or creates) the test user `dave@test.local` in the Auth emulator and
+   calls `run_ingest`. **The first run only aligns `ALLOWED_UID` in `functions/.env.local` with the test user's uid
+   and exits with code 2**: restart `./rundev.sh` (params are read at startup) and run it again.
+4. Open the `emails` collection in the Emulator UI (the script prints the URL): http://127.0.0.1:4000/firestore/default/data/emails
+
+Options of `ingest-local.sh`:
+- `--reset-user`: delete and recreate the test user in the Auth emulator.
+- `--lookback N`: set `INGEST_LOOKBACK_DAYS=N` in `functions/.env.local` (e.g. for a backfill); needs a restart of `./rundev.sh`, so it exits with code 2.
+- `TEST_USER_PASSWORD` env var overrides the fixed local-only test password.
+
+Exit codes: `0` ok · `1` error (emulator unreachable, sign-in or call failed) · `2` restart `./rundev.sh`, then re-run.
+
+The script only talks to `127.0.0.1` (hosts/ports from `firebase.json`, project from `.firebaserc`) and never prints tokens.
+If the call fails with `invalid_grant` (visible in the `./rundev.sh` terminal), the Gmail token is expired or revoked: run `./setup.sh --reauth`.
+
 ## Environment variables (`functions/.env`, `functions/.env.local`)
 | Name | Default | Meaning |
 |---|---|---|
@@ -49,6 +67,7 @@ Secrets: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
 
 ## Usage
 - `./setup.sh [--reauth]`: see Setup.
+- `./ingest-local.sh [--reset-user] [--lookback N]`: see Local quickstart.
 - `./rundev.sh [--seed]`: Auth/Firestore/Functions emulators (UI at http://127.0.0.1:4000);
   `--seed` loads `fixtures/emails/*.eml`. The schedule does not fire in the emulator: call `run_ingest`
   (callable, needs an authenticated user with the allowed uid).

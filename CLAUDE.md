@@ -6,7 +6,7 @@ conflitto, fermarsi e chiedere). Architettura di questo repo: `docs/ARCHITECTURE
 
 ## Comandi (da `functions/`, venv in `functions/venv`)
 - `venv/bin/ruff check .` · `venv/bin/ruff format --check .` · `venv/bin/mypy distillo main.py` · `venv/bin/pytest`
-- Dalla root: `./setup.sh [--reauth]` (venv, file locali dagli esempi senza sovrascrivere, autorizzazione Gmail), `./rundev.sh [--seed]`, `./deploy.sh [all|functions|rules]`
+- Dalla root: `./setup.sh [--reauth]` (venv, file locali dagli esempi senza sovrascrivere, autorizzazione Gmail), `./rundev.sh [--seed]`, `./ingest-local.sh [--reset-user] [--lookback N]` (chiama `run_ingest` sull'emulatore con un utente di test; exit 2 = riavviare `rundev.sh`), `./deploy.sh [all|functions|rules]`
 - Script: `PYTHONPATH=functions functions/venv/bin/python scripts/<script>.py`
 
 ## File chiave
@@ -26,5 +26,5 @@ conflitto, fermarsi e chiedere). Architettura di questo repo: `docs/ARCHITECTURE
 4. Nessun segreto nel repo né nei log; mai loggare i corpi delle mail. I segreti non si stampano, non si passano come argomenti da riga di comando e non si scrivono in file versionati (solo in `functions/.secret.local`, modo 600, via variabili d'ambiente del singolo processo).
 5. `mypy`, `ruff check`, `ruff format --check` e `pytest` devono passare.
 6. Scope Gmail solo `gmail.readonly`; mai modificare la casella.
-7. `setup.sh`, `rundev.sh` e `deploy.sh` restano eseguibili, con `set -euo pipefail`.
+7. `setup.sh`, `rundev.sh`, `ingest-local.sh` e `deploy.sh` restano eseguibili, con `set -euo pipefail`.
 8. Non fare deploy né comandi che modificano il progetto Firebase remoto senza richiesta esplicita.
