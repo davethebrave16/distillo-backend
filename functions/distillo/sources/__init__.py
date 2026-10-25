@@ -1,0 +1,1 @@
+"""Hardcoded newsletter sources."""

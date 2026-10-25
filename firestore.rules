@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Single allowed user. Replace with the Firebase Auth uid (see README).
+    function allowedUid() {
+      return 'REPLACE_WITH_UID';
+    }
+
+    function isAllowed() {
+      return request.auth != null && request.auth.uid == allowedUid();
+    }
+
+    // Everything is read-only for the allowed user; writes come from the
+    // functions (Admin SDK bypasses these rules).
+    match /{document=**} {
+      allow read: if isAllowed();
+      allow write: if false;
+    }
+
+    // Source toggle: only `enabled` and `updatedAt`.
+    match /sourceSettings/{sourceId} {
+      allow create, update: if isAllowed()
+        && request.resource.data.keys().hasOnly(['enabled', 'updatedAt'])
+        && request.resource.data.enabled is bool
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    // Items: the client may only flip `read` and `starred` on existing items.
+    match /items/{itemId} {
+      allow update: if isAllowed()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'starred'])
+        && request.resource.data.read is bool
+        && request.resource.data.starred is bool;
+    }
+  }
+}

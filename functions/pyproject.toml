@@ -1,0 +1,29 @@
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["pydantic.mypy"]
+warn_unused_configs = true
+exclude = ["venv/"]
+
+[[tool.mypy.overrides]]
+module = ["distillo.*", "main"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["firebase_admin.*", "firebase_functions.*", "markdownify.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

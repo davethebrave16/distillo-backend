@@ -1,0 +1,14 @@
+functions/venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.emulator-data/
+functions/.env.local
+functions/.secret.local
+*.log
+.DS_Store
+firebase-export-*/
+.venv/
+.env.local
+.secret.local

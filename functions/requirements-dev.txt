@@ -1,0 +1,5 @@
+ruff>=0.17,<1
+mypy>=2.4,<3
+pytest>=9,<10
+google-auth-oauthlib>=1.5,<2
+google-api-python-client-stubs>=1.40,<2
